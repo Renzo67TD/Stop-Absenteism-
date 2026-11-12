@@ -15,6 +15,7 @@
      7. Roll Call                 (Home)
      8. 5-Day Challenge           (Solutions)
      9. Pledge page: print + Pledge Wall
+    10. Print: reveal states cleared, FAQ answers opened
    ========================================================================== */
 (function () {
   "use strict";
@@ -36,6 +37,13 @@
 
   function clamp(n, lo, hi) { return Math.min(Math.max(n, lo), hi); }
 
+  // Live-region helper: clearing first makes a repeated message announce again.
+  function announce(node, text) {
+    if (!node) { return; }
+    node.textContent = "";
+    raf(function () { node.textContent = text; });
+  }
+
   function el(tag, className) {
     var node = document.createElement(tag);
     if (className) { node.className = className; }
@@ -52,6 +60,18 @@
       var isOpen = links.classList.toggle("open");
       toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
     });
+    // Desktop width has no menu button: never leave the menu in a stale "open" state.
+    var mqNav = window.matchMedia ? window.matchMedia("(max-width: 1000px)") : null;
+    var closeOnWide = function () {
+      if (mqNav && !mqNav.matches && links.classList.contains("open")) {
+        links.classList.remove("open");
+        toggle.setAttribute("aria-expanded", "false");
+      }
+    };
+    if (mqNav) {
+      if (mqNav.addEventListener) { mqNav.addEventListener("change", closeOnWide); }
+      else if (mqNav.addListener) { mqNav.addListener(closeOnWide); }
+    }
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && links.classList.contains("open")) {
         links.classList.remove("open");
@@ -190,33 +210,61 @@
   function initReveal() {
     if (reduced() || !("IntersectionObserver" in window)) { return; }
 
-    var SELECTOR = ".section-head, .card, .callout, .pledge-card, .img-slot, .wall-board, .faq";
+    // .gallery-grid is revealed as one piece; its frames are not armed separately
+    // (otherwise the ink strip would show up empty before its frames fade in).
+    var SELECTOR = ".section-head, .card, .callout, .pledge-card, .img-slot, .gallery-grid, .wall-board, .faq";
     var vh = window.innerHeight || root.clientHeight || 800;
     var all = document.querySelectorAll(SELECTOR);
     var parents = [];
     var counts = [];
     var armed = [];
+    var pending = 0;
+
+    function settle(node, delay) {
+      window.setTimeout(function () {
+        node.classList.remove("rv", "rv-in");
+        node.style.removeProperty("--i");
+        node.removeAttribute("data-rv");
+      }, 260 + delay * 70 + 160);
+    }
 
     var io = new IntersectionObserver(function (entries) {
       for (var e = 0; e < entries.length; e++) {
-        if (!entries[e].isIntersecting) { continue; }
-        var target = entries[e].target;
+        var entry = entries[e];
+        var target = entry.target;
+        // Reveal what is in view, and anything that is already ABOVE the viewport
+        // (e.g. after an anchor jump) so nothing is ever left invisible behind the reader.
+        var above = entry.rootBounds && entry.boundingClientRect.bottom <= entry.rootBounds.top;
+        if (!entry.isIntersecting && !above) { continue; }
         io.unobserve(target);
-        target.classList.add("rv-in");
+        pending--;
         var idx = parseInt(target.getAttribute("data-rv") || "0", 10) || 0;
-        (function (node, delay) {
-          window.setTimeout(function () {
-            node.classList.remove("rv", "rv-in");
-            node.style.removeProperty("--i");
-            node.removeAttribute("data-rv");
-          }, 260 + delay * 70 + 160);
-        })(target, idx);
+        if (above) {
+          target.classList.remove("rv", "rv-in");
+          target.style.removeProperty("--i");
+          target.removeAttribute("data-rv");
+        } else {
+          target.classList.add("rv-in");
+          settle(target, idx);
+        }
       }
+      if (pending <= 0) { io.disconnect(); }
     }, { rootMargin: "0px 0px -6% 0px", threshold: 0 });
+
+    function clearAll() {
+      for (var n = 0; n < armed.length; n++) {
+        armed[n].classList.remove("rv", "rv-in");
+        armed[n].style.removeProperty("--i");
+        armed[n].removeAttribute("data-rv");
+      }
+      io.disconnect();
+      pending = 0;
+    }
 
     for (var a = 0; a < all.length; a++) {
       var node = all[a];
       if (node.closest(".hero, .rollcall, .map-box")) { continue; }
+      if (node.closest(".gallery-grid") && !node.classList.contains("gallery-grid")) { continue; }
       if (node.getBoundingClientRect().top < vh * 0.92) { continue; }
 
       var p = parents.indexOf(node.parentNode);
@@ -228,17 +276,14 @@
       node.style.setProperty("--i", String(order));
       node.setAttribute("data-rv", String(order));
       armed.push(node);
+      pending++;
       io.observe(node);
     }
+    if (!pending) { io.disconnect(); }
 
-    // Printing must never catch anything hidden.
-    window.addEventListener("beforeprint", function () {
-      for (var n = 0; n < armed.length; n++) {
-        armed[n].classList.remove("rv", "rv-in");
-        armed[n].style.removeProperty("--i");
-      }
-      io.disconnect();
-    });
+    // Printing, and coming back from the back/forward cache, must never find anything hidden.
+    window.addEventListener("beforeprint", clearAll);
+    window.addEventListener("pageshow", function (event) { if (event.persisted) { clearAll(); } });
   }
   initReveal();
 
@@ -293,11 +338,12 @@
     }
 
     if (form && input && list) {
+      input.addEventListener("input", function () { if (msg && msg.textContent) { msg.textContent = ""; } });
       form.addEventListener("submit", function (event) {
         event.preventDefault();
         var name = input.value.replace(/\s+/g, " ").trim();
         if (!name) {
-          if (msg) { msg.textContent = "Type your first name, then press Present Po!"; }
+          announce(msg, "Type your first name, then press Present Po!");
           input.focus();
           return;
         }
@@ -327,7 +373,7 @@
           list.removeChild(list.firstElementChild);
         }
 
-        if (msg) { msg.textContent = name + ", you are marked present. Present Po!"; }
+        announce(msg, name + ", you are marked present. Present Po!");
         input.value = "";
         input.focus();
       });
@@ -469,12 +515,12 @@
 
     if (pinOnly) { pinOnly.removeAttribute("hidden"); }
 
-    var say = function (text) { if (pinMsg) { pinMsg.textContent = text; } };
+    var say = function (text) { announce(pinMsg, text); };
     var clean = function (value) { return (value || "").replace(/\s+/g, " ").trim(); };
 
     var readForm = function () {
       return {
-        name: clean(pinForm.elements["pin-name"] ? pinForm.elements["pin-name"].value : document.getElementById("pin-name").value),
+        name: clean(document.getElementById("pin-name").value),
         klass: clean(document.getElementById("pin-class").value),
         adviser: clean(document.getElementById("pin-adviser").value),
         promise: clean(document.getElementById("pin-promise").value)
@@ -546,5 +592,18 @@
       });
     }
   }
+
+  // ---------------------------------------------------------------
+  // 10. Print: closed FAQ answers would be missing from the page, so open
+  //     them for the print job and put them back afterwards.
+  // ---------------------------------------------------------------
+  var reopened = [];
+  window.addEventListener("beforeprint", function () {
+    var all = document.querySelectorAll("details:not([open])");
+    for (var d = 0; d < all.length; d++) { all[d].setAttribute("open", ""); reopened.push(all[d]); }
+  });
+  window.addEventListener("afterprint", function () {
+    while (reopened.length) { reopened.pop().removeAttribute("open"); }
+  });
 
 })();

@@ -2,8 +2,7 @@
    PRESENT PO!  ·  css/style.css  ·  FINAL
    CONCEPT: THE REGISTER. Every interaction "marks you present".
    Three verbs only:  TICK (boxes fill)  ·  STAMP (labels press)  ·  RULE (lines draw)
-   Colours: blue (primary), white, black. Tints of those only
-   (the map tiles are filtered to a blue/white/black duotone).
+   Colours: blue (primary), white, black. Tints of those only.
    Motion: 120-280ms, one easing token, nothing loops.
 
    FAIL-SAFE RULE (task A): every blue surface paints its own background-color
@@ -21,6 +20,7 @@
      .arrow[data-dir]      arrow glyph wrapped inside .card-link
      .hero-mark --cx --cy  click-anywhere tick/stamp in the hero (JS creates)
      .is-slam              added to a challenge card for one stamp slam
+     --n (.gallery-grid)   whole number of sprocket holes per row (set per breakpoint)
    ========================================================================== */
 
 /* ===== 1. TOKENS ===== */
@@ -69,7 +69,7 @@ html{scroll-padding-top:5.5rem}
 [hidden]{display:none!important}
 body{margin:0;font-family:var(--sans);font-size:1.05rem;line-height:1.65;color:var(--ink);background:var(--white)}
 main{counter-reset:sec}
-main>section:not(.rollcall){counter-increment:sec}
+.section-head{counter-increment:sec}   /* roll numerals count the headings on THIS page: 01, 02, 03... (the banner shows the page number) */
 img{max-width:100%;height:auto}
 h1,h2,h3{color:var(--ink);font-weight:900;letter-spacing:-.025em;line-height:1.08;margin:0 0 .7rem;overflow-wrap:break-word;text-decoration:underline;text-decoration-color:transparent;text-decoration-thickness:.08em;text-underline-offset:.16em;transition:text-decoration-color var(--t) var(--ease)}
 h1{font-size:clamp(2.2rem,7vw,4.4rem);text-transform:uppercase;letter-spacing:-.04em;line-height:.96}
@@ -176,7 +176,7 @@ section{padding:4.5rem 0}
 .hero-mark.is-stamp{width:auto;height:auto;padding:.45rem .65rem;background:var(--ink);color:#fff;border-color:#fff;font:800 .85rem/1 var(--mono);letter-spacing:.12em;--rot:5deg}
 .hero-mark.is-stamp::before{content:"PRESENT PO!";content:"PRESENT PO!" / ""}
 @media (prefers-reduced-motion:no-preference){
-  .hero-mark{animation:slam var(--t-slam) var(--ease) both,fadeOut var(--t-slow) linear 1100ms forwards}
+  .hero-mark{animation:slam var(--t-slam) var(--ease) both,fadeOut var(--t-slow) var(--ease) 1100ms forwards}
 }
 @media (prefers-reduced-motion:reduce){.hero-mark{display:none}}
 
@@ -212,7 +212,7 @@ section{padding:4.5rem 0}
 .card-preview{display:flex;flex-direction:column;gap:.5rem}
 .card-preview h3{padding-right:2.2rem}
 .card-preview::after{content:"\2713";content:"\2713" / "";position:absolute;top:1.1rem;right:1.1rem;display:grid;place-items:center;width:1.6rem;height:1.6rem;background:#fff;border:2px solid var(--ink);border-radius:4px;color:transparent;font:900 1rem/1 var(--sans);rotate:6deg;transition:var(--tr)}
-.card-link{display:inline-block;align-self:flex-start;font-weight:800;text-decoration:none;margin-top:auto;background:linear-gradient(currentColor,currentColor) 0 100%/0 2px no-repeat;transition:background-size var(--t) var(--ease),color var(--t) var(--ease)}
+.card-link{position:relative;display:inline-block;align-self:flex-start;font-weight:800;text-decoration:none;margin-top:auto;background:linear-gradient(90deg,currentColor 50%,transparent 50%) 100% 100%/200% 2px no-repeat;transition:background-position var(--t) var(--ease),color var(--t) var(--ease)}
 .card-link .arrow{display:inline-block;transition:var(--tr)}
 
 /* Callout: a stamped slab. Heading left in big caps, text right (wide screens) */
@@ -288,17 +288,32 @@ a.btn,button.btn{color:var(--fg)}
 .map-box{display:grid;gap:1.6rem;justify-items:start}
 .map-box .img-slot{width:100%}
 
-/* ---- GALLERY: contact sheet / film strips ---- */
-.gallery-grid{position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:2rem 1.5rem;padding:3.4rem 1.5rem;background-color:var(--ink);background-image:repeating-linear-gradient(90deg,var(--paper) 0 14px,transparent 14px 30px),repeating-linear-gradient(90deg,var(--paper) 0 14px,transparent 14px 30px);background-size:100% 12px,100% 12px;background-position:0 1rem,0 calc(100% - 1rem);background-repeat:no-repeat;border:3px solid var(--ink);border-radius:var(--radius);box-shadow:8px 8px 0 var(--blue)}
-.gallery-grid .img-slot{--r:0deg;flex:0 1 min(100%,420px);background:transparent;color:#fff;border:0;border-radius:0;padding:0;box-shadow:none}
+/* ---- GALLERY: film strips ----
+   Every strip is a full-width, symmetrical piece of film, whatever the number of frames:
+   * sprocket tile = strip width / --n (a whole number), so both ends of each hole row finish on a whole hole;
+   * the film frames sit centred, and a blank, cut-off frame (decorative ::before / ::after) continues the film
+     on each side (wide screens). Narrow screens stack the frames in one centred column;
+   * the ink strip paints its own background-color; sprockets are gradients, blank frames are outlines only. */
+.gallery-grid{--n:10;--hole:14px;--cap:calc(.7rem + 2*1.4*.8rem);position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:2rem 1.5rem;padding:3.4rem .75rem;background-color:var(--ink);background-image:linear-gradient(90deg,transparent calc(50% - var(--hole)/2),var(--paper) calc(50% - var(--hole)/2),var(--paper) calc(50% + var(--hole)/2),transparent calc(50% + var(--hole)/2)),linear-gradient(90deg,transparent calc(50% - var(--hole)/2),var(--paper) calc(50% - var(--hole)/2),var(--paper) calc(50% + var(--hole)/2),transparent calc(50% + var(--hole)/2));background-size:calc(100% / var(--n)) 12px;background-position:0% 1rem,0% calc(100% - 1rem);background-repeat:repeat-x;background-clip:padding-box;border:3px solid var(--ink);border-inline-width:1.5rem;border-radius:var(--radius);box-shadow:8px 8px 0 var(--blue)}
+@media (min-width:440px){.gallery-grid{--n:13}}
+@media (min-width:550px){.gallery-grid{--n:17}}
+@media (min-width:692px){.gallery-grid{--n:22}}
+@media (min-width:880px){.gallery-grid{--n:29}}
+@media (min-width:1100px){.gallery-grid{--n:33}}
+.gallery-grid .img-slot{--r:0deg;flex:0 1 min(100%,420px);min-width:0;background:transparent;color:#fff;border:0;border-radius:0;padding:0;box-shadow:none}
 .gallery-grid .img-slot:nth-child(even){--r:0deg}
 .gallery-grid .img-slot img{border:3px solid #fff;border-radius:2px}
 .gallery-grid .img-slot::before{top:0;left:0;width:100%;border-radius:2px}
-.gallery-grid .img-slot figcaption{color:#fff;padding:.7rem 0 0}
+.gallery-grid .img-slot figcaption{min-height:var(--cap);color:#fff;padding:.7rem 0 0}
 .gallery-grid .img-slot figcaption::before{display:none}
+.gallery-grid :focus-visible{outline-color:#fff}
 .section-tint .gallery-grid{box-shadow:8px 8px 0 #fff}
-.gallery-grid:has(>.img-slot:only-child){justify-content:flex-start;padding-inline:2.5rem}
-main>section:nth-of-type(even) .gallery-grid:has(>.img-slot:only-child){justify-content:flex-end}
+@media (min-width:700px){
+  .gallery-grid{flex-wrap:nowrap}
+  .gallery-grid::before,.gallery-grid::after{content:"";content:"" / "";flex:1 1 0;min-width:0;align-self:stretch;margin-bottom:var(--cap);border:2px solid rgba(255,255,255,.5);pointer-events:none}
+  .gallery-grid::before{border-left-width:0;border-radius:0 2px 2px 0}
+  .gallery-grid::after{border-right-width:0;border-radius:2px 0 0 2px}
+}
 
 /* ===== 10. ROLL CALL (home; shown by JS) — the theatrical centrepiece ===== */
 .rollcall{position:relative;overflow:hidden;background-color:var(--ink);color:#fff;padding:4.5rem 0 calc(var(--cb) + 3.5rem)}
@@ -324,7 +339,7 @@ main>section:nth-of-type(even) .gallery-grid:has(>.img-slot:only-child){justify-
 .rollcall-list:empty{min-height:10rem;background:repeating-linear-gradient(180deg,transparent 0,transparent calc(3.3rem - 2px),rgba(10,10,10,.35) calc(3.3rem - 2px),rgba(10,10,10,.35) 3.3rem)}
 .rollcall-list li{counter-increment:row;display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1rem;padding:.7rem 0;border-bottom:2px dashed rgba(10,10,10,.4);font-family:var(--mono);transition:var(--tr)}
 .rollcall-list li::before{content:"No. " counter(row,decimal-leading-zero);content:"No. " counter(row,decimal-leading-zero) / "";color:var(--blue-deep);font-size:.85rem;font-weight:700;transition:color var(--t) var(--ease)}
-.rc-name{font-weight:900;font-size:1.5rem;line-height:1.1;font-family:var(--sans)}
+.rc-name{min-width:0;max-width:100%;overflow-wrap:anywhere;font-weight:900;font-size:1.5rem;line-height:1.1;font-family:var(--sans)}
 .rc-date{color:var(--muted);font-size:.8rem}
 .rc-stamp{--rot:-5deg;margin-left:auto;display:inline-block;border:3px solid var(--blue);color:var(--blue);border-radius:4px;padding:.25rem .55rem;font-weight:800;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;rotate:var(--rot);transition:var(--tr)}
 @media (prefers-reduced-motion:no-preference){
@@ -342,7 +357,7 @@ main>section:nth-of-type(even) .gallery-grid:has(>.img-slot:only-child){justify-
 @media (prefers-reduced-motion:no-preference){
   .card.is-slam .tick-stamp{animation:slam var(--t-slam) var(--ease) backwards}
 }
-.challenge-note{margin:1.75rem 0 0;font:700 .95rem/1.5 var(--mono);color:#fff}
+.grid+.challenge-note,.challenge-note{margin:1.75rem 0 0;font:700 .95rem/1.5 var(--mono);color:#fff}
 
 /* ===== 12. PLEDGE WALL (coded bulletin board) ===== */
 .wall-layout{display:grid;gap:2.75rem;grid-template-columns:minmax(0,1fr);align-items:stretch;padding-top:1.6rem}
@@ -350,20 +365,20 @@ main>section:nth-of-type(even) .gallery-grid:has(>.img-slot:only-child){justify-
 .wall-board{position:relative;padding:2.6rem 1.4rem 2rem;background-color:var(--blue);background-image:radial-gradient(rgba(255,255,255,.22) 1.5px,transparent 1.6px);background-size:22px 22px;border:12px solid var(--ink);border-radius:14px;box-shadow:inset 0 0 0 4px #fff,8px 8px 0 var(--blue);translate:0 var(--ry,0px);transition:var(--tr)}
 .wall-board::before{content:"THE PLEDGE WALL";content:"THE PLEDGE WALL" / "";position:absolute;top:-1.85rem;left:50%;translate:-50% 0;z-index:2;background:var(--ink);color:#fff;border:3px solid #fff;border-radius:4px;padding:.45rem 1rem;font:800 .8rem/1 var(--mono);letter-spacing:.2em;white-space:nowrap;transition:var(--tr)}
 .wall-notes{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2rem 1.3rem}
-.wall-note{--r:-2deg;position:relative;margin:0;padding:1.7rem 1rem 1rem;min-height:9rem;display:flex;flex-direction:column;justify-content:space-between;gap:.6rem;background:#fff repeating-linear-gradient(180deg,transparent 0,transparent 1.55rem,rgba(22,71,232,.2) 1.55rem,rgba(22,71,232,.2) calc(1.55rem + 1px));color:var(--ink);border-radius:3px;box-shadow:3px 5px 0 rgba(10,10,10,.45);rotate:var(--r);transition:var(--tr)}
+.wall-note{--r:-2deg;position:relative;min-width:0;margin:0;padding:1.7rem 1rem 1rem;min-height:9rem;display:flex;flex-direction:column;justify-content:space-between;gap:.6rem;background:#fff repeating-linear-gradient(180deg,transparent 0,transparent 1.55rem,rgba(22,71,232,.2) 1.55rem,rgba(22,71,232,.2) calc(1.55rem + 1px));color:var(--ink);border-radius:3px;box-shadow:3px 5px 0 rgba(10,10,10,.45);rotate:var(--r);transition:var(--tr)}
 .wall-note:nth-child(2n){--r:1.8deg}
 .wall-note:nth-child(3n){--r:-1deg}
 .wall-note:nth-child(5n){--r:2.6deg}
 .wall-note:nth-child(3n+2){background-color:var(--ice)}
 .wall-note:nth-child(4n){background:var(--ink);color:#fff}
 .wall-note::before{content:"";position:absolute;top:.55rem;left:50%;width:1rem;height:1rem;margin-left:-.5rem;border-radius:50%;background:#fff;border:3px solid var(--ink);box-shadow:2px 3px 0 rgba(10,10,10,.4);transition:var(--tr)}
-.wall-text{margin:0;font:italic 700 1.05rem/1.55rem Georgia,"Times New Roman",serif}
-.wall-by{margin:0;font:700 .72rem/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
+.wall-text{margin:0;overflow-wrap:anywhere;font:italic 700 1.05rem/1.55rem Georgia,"Times New Roman",serif}
+.wall-by{margin:0;overflow-wrap:anywhere;font:700 .72rem/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
 .wall-note:nth-child(4n) .wall-by{color:var(--sky)}
 .wall-note-empty{--hl:var(--ink);background:transparent!important;border:3px dashed #fff;color:#fff!important;box-shadow:none}
 .wall-note-empty .wall-by,.wall-note-empty .wall-by a{color:#fff}
 @media (prefers-reduced-motion:no-preference){
-  .wall-note.is-new{animation:dropIn .3s var(--ease) backwards}
+  .wall-note.is-new{animation:dropIn var(--t-slam) var(--ease) backwards}
   .faq details[open] p{animation:rowIn var(--t-slow) var(--ease) both}
 }
 
@@ -376,7 +391,7 @@ main>section:nth-of-type(even) .gallery-grid:has(>.img-slot:only-child){justify-
 .copyright{border-top:2px solid rgba(255,255,255,.3);padding-top:1rem;margin:0;font:.85rem var(--mono)}
 
 /* ===== 14. PLAIN TEXT LINKS: highlighter sweep ===== */
-main a:not([class]),.footer-nav a{background:linear-gradient(var(--hl),var(--hl)) 0 100%/0 100% no-repeat;transition:background-size var(--t) var(--ease),color var(--t) var(--ease)}
+main a:not([class]),.footer-nav a{background:linear-gradient(90deg,var(--hl) 50%,transparent 50%) 100% 0/200% 100% no-repeat;transition:background-position var(--t) var(--ease),color var(--t) var(--ease)}
 
 /* ===== 15. HOVER + KEYBOARD STATES (mouse and trackpad only; every one has a focus twin) ===== */
 @media (hover:hover) and (pointer:fine){
@@ -410,8 +425,8 @@ main a:not([class]),.footer-nav a{background:linear-gradient(var(--hl),var(--hl)
   .card-accent:is(:hover,:focus-within)::before{clip-path:inset(0)}
   .grid>.card-accent:is(:hover,:focus-within)::after{color:var(--blue)}
   .card-preview:is(:hover,:focus-within)::after{background:var(--blue);color:#fff;rotate:calc(6deg - 12deg*var(--m));scale:calc(1 + .12*var(--m))}
-  .card:is(:hover,:focus-within) .card-link{background-size:100% 2px}
-  .card-link:is(:hover,:focus-visible){background-size:100% 2px}
+  .card:is(:hover,:focus-within) .card-link{background-position:0 100%}
+  .card-link:is(:hover,:focus-visible){background-position:0 100%}
   .card:is(:hover,:focus-within) .card-link .arrow{translate:calc(5px*var(--m)) 0}
   .card:is(:hover,:focus-within) .card-link .arrow[data-dir="down"]{translate:0 calc(4px*var(--m))}
   /* form cards stay put so fields do not move under the pointer */
@@ -449,7 +464,7 @@ main a:not([class]),.footer-nav a{background:linear-gradient(var(--hl),var(--hl)
   .steps li:hover::before{background:var(--ink);scale:calc(1 + .15*var(--m))}
 
   /* faq ledger: the row fills (TICK) and its numeral inks in */
-  .faq details:not([open]):hover{background:var(--ice)}
+  .faq details:not([open]):is(:hover,:focus-within){background:var(--ice)}
   .faq summary:is(:hover,:focus-visible){color:var(--blue-deep)}
   .faq summary:is(:hover,:focus-visible)::before{color:var(--blue)}
   .faq summary:is(:hover,:focus-visible)::after{color:var(--ink);rotate:calc(45deg*var(--m))}
@@ -481,7 +496,7 @@ main a:not([class]),.footer-nav a{background:linear-gradient(var(--hl),var(--hl)
   .site-footer:hover::before{background:#fff;color:var(--blue)}
 
   /* plain text links + footer links */
-  main a:not([class]):is(:hover,:focus-visible),.footer-nav a:is(:hover,:focus-visible){background-size:100% 100%}
+  main a:not([class]):is(:hover,:focus-visible),.footer-nav a:is(:hover,:focus-visible){background-position:0 0}
   main a:not([class]):is(:hover,:focus-visible){color:var(--blue-deep)}
   .section-tint a:not([class]):is(:hover,:focus-visible){color:#fff}
   .section-tint :is(.card,.callout,.pledge-card) a:not([class]):is(:hover,:focus-visible){color:var(--blue-deep)}
@@ -490,6 +505,7 @@ main a:not([class]),.footer-nav a{background:linear-gradient(var(--hl),var(--hl)
 
 /* Reduced motion + mouse: colour and outline only, no movement, no growing shadows */
 @media (prefers-reduced-motion:reduce) and (hover:hover) and (pointer:fine){
+  .btn:is(:hover,:focus-visible)::after{scale:1;rotate:0deg}
   .card:is(:hover,:focus-within),.callout:is(:hover,:focus-within),.pledge-card:is(:hover,:focus-within),.img-slot:is(:hover,:focus-within){outline:3px solid var(--blue);outline-offset:3px}
   .section-tint :is(.card,.callout,.pledge-card,.img-slot):is(:hover,:focus-within){outline-color:#fff}
   .gallery-grid .img-slot:is(:hover,:focus-within){outline-color:#fff}
@@ -756,14 +772,25 @@ main a:not([class]),.footer-nav a{background:linear-gradient(var(--hl),var(--hl)
 .btn.btn:active{translate:calc(2px*var(--m)) calc(2px*var(--m));rotate:0deg;box-shadow:0 0 0 var(--sh)}
 .btn:active::before{clip-path:inset(0)}
 .card:active,.callout:active,.pledge-card:active{translate:calc(2px*var(--m)) calc(var(--stag,0px) + 2px*var(--m));--o:2px}
-.card-link:active,main a:not([class]):active,.footer-nav a:active{background-size:100% 100%}
-.card-link:active{background-size:100% 2px}
+.card-link:active,main a:not([class]):active,.footer-nav a:active{background-position:0 0}
+.card-link:active{background-position:0 100%}
 .nav-links a:active::before,.nav-links a:active::after{clip-path:inset(0)}
 .brand:active::before{scale:calc(1 - .08*var(--m))}
 .faq summary:active{background:var(--ice)}
 .tick:active{translate:calc(2px*var(--m)) calc(2px*var(--m));box-shadow:0 0 0 var(--ink)}
 .wall-note:active,.img-slot:active{scale:calc(1 - .01*var(--m))}
 .eyebrow:active,.rc-stamp:active{scale:calc(1 - .05*var(--m))}
+
+/* touch: every control gets a 44px target (inline links inside sentences are exempt) */
+@media (pointer:coarse){
+  .brand{min-height:44px}
+  .nav-toggle{min-height:44px;min-width:44px}
+  .card-link::after{content:"";position:absolute;inset:-.7rem -.4rem}
+  .footer-nav a{display:inline-block;padding-block:.6rem}
+  .tick{min-height:44px}
+  .form .pin-check{min-height:44px;align-items:center}
+  .form .pin-check input{width:1.6rem;height:1.6rem;margin-top:0}
+}
 
 /* ===== 18. SCROLL-REVEAL (class added by JS only, and removed after it plays) ===== */
 @media (prefers-reduced-motion:no-preference){
@@ -784,7 +811,7 @@ main a:not([class]),.footer-nav a{background:linear-gradient(var(--hl),var(--hl)
   @supports (animation-timeline:view()){
     @keyframes ruleDraw{from{scale:0 1}to{scale:1 1}}
     @keyframes ripple{from{scale:.35;opacity:0}to{scale:1;opacity:1}}
-    @keyframes advance{from{background-position:0 1rem,0 calc(100% - 1rem)}to{background-position:-180px 1rem,-180px calc(100% - 1rem)}}
+    @keyframes advance{from{background-position:0% 1rem,0% calc(100% - 1rem)}to{background-position:calc(600% / (var(--n) - 1)) 1rem,calc(600% / (var(--n) - 1)) calc(100% - 1rem)}}   /* 600%/(n-1) of (width - tile) = exactly 6 hole periods: seamless */
     .section-head h2::after{animation:ruleDraw linear backwards;animation-timeline:view();animation-range:entry 10% entry 80%}
     .gallery-grid{animation:advance linear both;animation-timeline:view();animation-range:cover}
     @supports selector(:has(*)){
@@ -795,6 +822,7 @@ main a:not([class]),.footer-nav a{background:linear-gradient(var(--hl),var(--hl)
 
 /* ===== 20. RESPONSIVE ===== */
 @media (max-width:1000px){
+  html:not(.js) .site-header{position:relative}   /* no JS = no menu button: the full link list must not stay stuck to the top */
   .js .nav-toggle{display:inline-block}
   .site-header nav{flex-basis:100%}
   .js .nav-links{display:none;flex-direction:column;padding-bottom:.6rem}
@@ -819,7 +847,7 @@ main a:not([class]),.footer-nav a{background:linear-gradient(var(--hl),var(--hl)
   .faq summary::before{font-size:1.6rem}
   .faq details p{padding:0 1rem 1.2rem 1rem}
   .rollcall-inner>div:last-child{padding:1.4rem 1rem 1.2rem 3.4rem;rotate:0deg;background-image:linear-gradient(90deg,transparent 2.4rem,rgba(22,71,232,.4) 2.4rem,rgba(22,71,232,.4) calc(2.4rem + 2px),transparent calc(2.4rem + 2px)),var(--ruled-ink)}
-  .gallery-grid{padding:3rem 1rem}
+  .gallery-grid{padding-block:3rem}
   body:has([data-slot=CON-01]) .split>div>.card li:has(>strong){grid-template-columns:5.2rem minmax(0,1fr)}
 }
 
@@ -828,7 +856,7 @@ main a:not([class]),.footer-nav a{background:linear-gradient(var(--hl),var(--hl)
   .site-header,.site-footer,.skip-link,.no-print,.rollcall,.hero-mark{display:none}
   body{background:#fff;color:#000}
   .hero,.page-banner,.section-tint{background:#fff!important;color:#000;border:0;clip-path:none;box-shadow:none!important;padding-block:2rem}
-  .section-tint::before,.section-tint::after,.hero::before,.page-banner::before,.page-banner::after,.callout::before,.callout::after,.pledge-card::after,.hero .img-slot::after,.img-slot figcaption::before,.card::before,.card::after,.section-head::before,.grid::before,.grid::after{display:none!important}
+  .section-tint::before,.section-tint::after,.hero::before,.page-banner::before,.page-banner::after,.callout::before,.callout::after,.pledge-card::after,.hero .img-slot::after,.img-slot figcaption::before,.card::before,.card::after,.section-head::before,.grid::before,.grid::after,.gallery-grid::before,.gallery-grid::after{display:none!important}
   .page-banner h1,.page-banner .lead,.section-tint h2{color:#000}
   *,*::before,*::after{translate:none!important;rotate:none!important;scale:none!important;transform:none!important;transition:none!important;animation:none!important}
   .card,.pledge-card,.callout{box-shadow:none}
